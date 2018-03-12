@@ -1,71 +1,98 @@
-#!/usr/bin/env python3
-"""Script for Tkinter GUI chat client."""
-from socket import AF_INET, socket, SOCK_STREAM
-from threading import Thread
-import tkinter
+import sys
+import re
+import socket
+import time
+
+station1 = ['', '192.168.1.201']
+station2 = ['', '192.168.1.12']
+station3 = ['', '192.168.1.13']
+station4 = ['', '192.168.1.14']
+station5 = ['', '192.168.1.15']
+KaD = {} #Keep alive Dictionary
+
+def write_online():
+    onlinetxt = open("online.txt", 'w')
+    if station1[0] != '':
+        onlinetxt.writelines(station1[0] + ',' + station1[1] + "\n")
+    else:
+        onlinetxt.writelines('No Toon' + "\n")
+    if station2[0] != '':
+        onlinetxt.writelines(station2[0] + ',' + station2[1] + "\n")
+    else:
+        onlinetxt.writelines('No Toon' + "\n")
+    if station3[0] != '':
+        onlinetxt.writelines(station3[0] + ',' + station3[1] + "\n")
+    else:
+        onlinetxt.writelines('No Toon' + "\n")
+    if station4[0] != '':
+        onlinetxt.writelines(station4[0] + ',' + station4[1] + "\n")
+    else:
+        onlinetxt.writelines('No Toon' + "\n")
+    if station5[0] != '':
+        onlinetxt.writelines(station5[0] + ',' + station5[1])
+    else:
+        onlinetxt.writelines('No Toon' + "\n")
+    onlinetxt.close()
 
 
-def receive():
-    """Handles receiving of messages."""
-    while True:
-        try:
-            msg = client_socket.recv(BUFSIZ).decode("utf8")
-            msg_list.insert(tkinter.END, msg)
-        except OSError:  # Possibly client has left the chat.
-            break
 
+while True:
+    #msg = client.recv(BUFSIZ).decode("utf8")
+    msg=input("TYPE TO ME: ")
+    msgSplit = msg.split("||")
+    if re.match('keepalive', msgSplit[0], re.IGNORECASE):
+        KaD[msgSplit[1]] = time.time()
+        print(KaD)
 
-def send(event=None):  # event is passed by binders.
-    """Handles sending of messages."""
-    msg = my_msg.get()
-    my_msg.set("")  # Clears input field.
-    client_socket.send(bytes(msg, "utf8"))
-    if msg == "{quit}":
-        client_socket.close()
-        top.quit()
+    elif re.match('message', msgSplit[0], re.IGNORECASE):
+        msgTo = msgSplit[2]
+        msgFrom = msgSplit[1]
+        msgText = msgSplit[3]
+        if msgSplit[1] > msgSplit[2]:
+            logname = msgSplit[1]+"-"+msgSplit[2]
+        else:
+            logname = msgSplit[2]+'-'+msgSplit[1]
 
+        f = open('./chatlogs/' + logname+'.txt', 'a+')
+        f.write(msgSplit[1]+": " +msgText + '\n')
+        f.close()
+    elif re.match('register', msgSplit[0], re.IGNORECASE):
+        #msgSplit[1] = toon [2] = IP
+        if msgSplit[2] == station1[1]:
+            station1[0] = msgSplit[1]
+        elif msgSplit[2] == station2[1]:
+            station2[0] == msgSplit[1]
+        elif msgSplit[2] == station3[1]:
+            station3[0] == msgSplit[1]
+        elif msgSplit[2] == station4[1]:
+            station4[0] == msgSplit[1]
+        elif msgSplit[2] == station5[1]:
+            station5[0] == msgSplit[1]
+        write_online()
 
-def on_closing(event=None):
-    """This function is to be called when the window is closed."""
-    my_msg.set("{quit}")
-    send()
-
-top = tkinter.Tk()
-top.title("Chatter")
-
-messages_frame = tkinter.Frame(top)
-my_msg = tkinter.StringVar()  # For the messages to be sent.
-my_msg.set("Type your messages here.")
-scrollbar = tkinter.Scrollbar(messages_frame)  # To navigate through past messages.
-# Following will contain the messages.
-msg_list = tkinter.Listbox(messages_frame, height=15, width=50, yscrollcommand=scrollbar.set)
-scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
-msg_list.pack(side=tkinter.LEFT, fill=tkinter.BOTH)
-msg_list.pack()
-messages_frame.pack()
-
-entry_field = tkinter.Entry(top, textvariable=my_msg)
-entry_field.bind("<Return>", send)
-entry_field.pack()
-send_button = tkinter.Button(top, text="Send", command=send)
-send_button.pack()
-
-top.protocol("WM_DELETE_WINDOW", on_closing)
-
-#----Now comes the sockets part----
-HOST = input('Enter host: ')
-PORT = input('Enter port: ')
-if not PORT:
-    PORT = 33000
-else:
-    PORT = int(PORT)
-
-BUFSIZ = 1024
-ADDR = (HOST, PORT)
-
-client_socket = socket(AF_INET, SOCK_STREAM)
-client_socket.connect(ADDR)
-
-receive_thread = Thread(target=receive)
-receive_thread.start()
-tkinter.mainloop()  # Starts GUI execution.
+#Keepalive Purge
+    if station1[0] in KaD:
+        if time.time() - KaD[station1[0]] > 30:
+            print(station1[0] + ' Removed from Reg')
+            station1[0] = ''
+            write_online()
+    if station2[0] in KaD:
+        if time.time() - KaD[station2[0]] > 30:
+            print(station2[0] + ' Removed from Reg')
+            station2[0] = ''
+            write_online()
+    if station3[0] in KaD:
+        if time.time() - KaD[station3[0]] > 30:
+            print(station3[0] + ' Removed from Reg')
+            station3[0] = ''
+            write_online()
+    if station4[0] in KaD:
+        if time.time() - KaD[station4[0]] > 30:
+            print(station4[0] + ' Removed from Reg')
+            station4[0] = ''
+            write_online()
+    if station5[0] in KaD:
+        if time.time() - KaD[station5[0]] > 30:
+            print(station5[0] + ' Removed from Reg')
+            station1[0] = ''
+            write_online()
